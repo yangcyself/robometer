@@ -214,8 +214,14 @@ def update_cfg_with_pretrained_ckpt(
     if not isinstance(loaded, dict):
         return
 
-    # Replace the model config except use_peft; sync only the progress-loss and multi-image fields.
-    model_names = {f.name for f in fields(ModelConfig)} - {"use_peft"}
+    # Restore architecture while preserving this run's fine-tuning choices.
+    # Architecture comes from the checkpoint; training scope is chosen by this run.
+    run_control_fields = {
+        "use_peft", "peft_vision_encoder", "quantization", "use_unsloth",
+        "train_vision_encoder", "train_language_model", "train_progress_head",
+        "train_preference_head", "train_success_head",
+    }
+    model_names = {f.name for f in fields(ModelConfig)} - run_control_fields
     progress_loss_fields = {"progress_loss_type", "progress_discrete_bins"}
     loss_names = progress_loss_fields & {f.name for f in fields(LossConfig)}
     data_sync_fields = progress_loss_fields | {"use_multi_image", "use_per_frame_progress_token"}
